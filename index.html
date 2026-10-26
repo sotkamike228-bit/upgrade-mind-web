@@ -6,27 +6,82 @@
   <title>Апгрейд Подсознания</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0;
-      padding: 20px 16px;
-      background: #0f172a;
-      color: #f8fafc;
+      padding: 16px;
+      background: #090d16;
+      color: #f1f5f9;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
     }
     .card {
-      background: #1e293b;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #131b2e;
+      border: 1px solid rgba(56, 189, 248, 0.15);
       border-radius: 18px;
-      padding: 22px 18px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      padding: 20px 18px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+      margin-bottom: 16px;
     }
-    h2 { margin: 0 0 10px 0; font-size: 1.35rem; font-weight: 700; color: #38bdf8; }
-    p { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin: 0 0 18px 0; }
+    h2 { margin: 0 0 10px 0; font-size: 1.25rem; font-weight: 700; color: #38bdf8; }
+    h3 { margin: 0 0 10px 0; font-size: 1.1rem; color: #f8fafc; }
+    p { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin: 0 0 16px 0; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .topic-btn {
+      background: #1a243b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .topic-btn:active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      transform: scale(0.98);
+    }
+    .topic-icon { font-size: 1.6rem; }
+    .topic-text b { display: block; font-size: 1rem; color: #f8fafc; }
+    .topic-text span { font-size: 0.85rem; color: #94a3b8; }
+    .option {
+      background: #1a243b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+    .option:active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+    }
+    .practice-box {
+      background: #0d1527;
+      border-left: 3px solid #38bdf8;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 14px;
+      color: #cbd5e1;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
     .btn {
       display: block;
       width: 100%;
@@ -35,62 +90,81 @@
       border: none;
       border-radius: 12px;
       padding: 14px;
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
       text-align: center;
-      text-decoration: none;
-      margin-top: 10px;
-      transition: opacity 0.2s;
+      margin-top: 14px;
     }
-    .btn:active { opacity: 0.85; }
-    .option {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 10px;
-      font-size: 0.95rem;
-      line-height: 1.4;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .option:active {
-      background: rgba(56, 189, 248, 0.15);
-      border-color: #38bdf8;
-    }
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-bottom: 12px;
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      margin-top: 8px;
     }
     .hidden { display: none; }
   </style>
 </head>
 <body>
-  <div id="screen-intro" class="card">
-    <span class="badge">Квантовая психология</span>
-    <h2>🧠 Диагностика ментальных блоков</h2>
-    <p>Ответьте на 3 вопроса, чтобы система определила ключевой барьер подсознания, блокирующий рост дохода и энергии.</p>
-    <button class="btn" onclick="startTest()">Пройти тест</button>
+
+  <!-- Экран 1: Выбор сферы -->
+  <div id="screen-topics" class="card">
+    <span class="badge">Квантовая диагностика</span>
+    <h2>Выберите сферу для анализа</h2>
+    <p>Определите область, где сейчас важнее всего снять сопротивление и выйти на новый уровень:</p>
+
+    <div class="topic-btn" onclick="chooseTopic('money')">
+      <div class="topic-icon">💰</div>
+      <div class="topic-text">
+        <b>Деньги и доход</b>
+        <span>Пробитие потолка, страх масштаба, слив</span>
+      </div>
+    </div>
+
+    <div class="topic-btn" onclick="chooseTopic('relations')">
+      <div class="topic-icon">❤️</div>
+      <div class="topic-text">
+        <b>Отношения и границы</b>
+        <span>Непонимание, угождение, страх открыться</span>
+      </div>
+    </div>
+
+    <div class="topic-btn" onclick="chooseTopic('health')">
+      <div class="topic-icon">⚡</div>
+      <div class="topic-text">
+        <b>Самочувствие и энергия</b>
+        <span>Хроническая усталость, апатия, перегруз</span>
+      </div>
+    </div>
+
+    <div class="topic-btn" onclick="chooseTopic('self')">
+      <div class="topic-icon">✨</div>
+      <div class="topic-text">
+        <b>Самоощущение и ценность</b>
+        <span>Синдром самозванца, сомнения, критика</span>
+      </div>
+    </div>
   </div>
 
+  <!-- Экран 2: Вопросы теста -->
   <div id="screen-quiz" class="card hidden">
-    <span class="badge" id="q-counter">Вопрос 1 из 3</span>
-    <h2 id="q-title" style="color: #f8fafc; font-size: 1.15rem;"></h2>
-    <div id="options-box"></div>
+    <span class="badge" id="quiz-badge">Вопрос</span>
+    <h3 id="quiz-question"></h3>
+    <div id="quiz-options"></div>
   </div>
 
+  <!-- Экран 3: Результат и Практика прямо в приложении -->
   <div id="screen-result" class="card hidden">
     <span class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">Диагностика готова</span>
-    <h2 id="res-header">Результат анализа</h2>
-    <p id="res-text"></p>
-    <a id="res-btn" class="btn" href="#">⚡ Получить разбор и практику в бота</a>
+    <h2 id="res-title"></h2>
+    <p id="res-desc"></p>
+    
+    <div class="practice-box">
+      <b style="color: #38bdf8; display: block; margin-bottom: 6px;">🎧 Персональная аудио-практика:</b>
+      <span id="res-practice"></span>
+    </div>
+
+    <button class="btn" onclick="finishAndClose()">Готово, сохранить результат</button>
+    <button class="btn btn-secondary" onclick="restart()">Пройти другую тему</button>
   </div>
 
   <script>
@@ -100,103 +174,221 @@
       tg.expand();
     }
 
-    const questions = [
-      {
-        q: "Когда вам предстоит сделать ключевой финансовый или карьерный шаг:",
-        opts: [
-          { t: "Появляются бесконечные сомнения, откладываю на потом", score: "procrastination" },
-          { t: "Берусь на износ, но быстро выгораю и теряю силы", score: "burnout" },
-          { t: "Возникает внутренний страх критики или потери контроля", score: "fear" }
-        ]
+    const quizData = {
+      money: {
+        title: "Деньги и доход",
+        questions: [
+          {
+            q: "Когда вы хотите вырасти в доходе в 2-3 раза:",
+            opts: [
+              { t: "Включается сомнение: 'А вдруг не справлюсь или всё рухнет?'", key: "fear" },
+              { t: "Начинаю суетиться, брать кучу работы и быстро выгораю", key: "burnout" },
+              { t: "Появляется прокрастинация: откладываю ключевые шаги", key: "procrastination" }
+            ]
+          },
+          {
+            q: "Как подсознание реагирует на приход крупной суммы:",
+            opts: [
+              { t: "Срочно хочется потратить или возникают непредвиденные траты", key: "burnout" },
+              { t: "Появляется тревога и страх потерять эти деньги", key: "fear" },
+              { t: "Чувство, что это случайность и скоро всё вернется назад", key: "procrastination" }
+            ]
+          }
+        ],
+        results: {
+          fear: {
+            title: "Подсознательный барьер масштаба",
+            desc: "Ваш мозг связывает финансовый рост с угрозой безопасности и потерей контроля. Срабатывает защитный механизм удержания на привычном уровне.",
+            practice: "«Перепрошивка емкости безопасности»: 7-минутная практика соединения с ресурсом денег без тревоги и гиперконтроля."
+          },
+          burnout: {
+            title: "Установка «Деньги через тяжелый труд»",
+            desc: "Глубокая связка: чтобы зарабатывать больше, нужно страдать и отдавать все жизненные силы. Это приводит к регулярному откату и сливу финансов.",
+            practice: "«Освобождение от волевого надрыва»: практика снятия телесного зажима и перехода в режим доходного созидания."
+          },
+          procrastination: {
+            title: "Скрытый саботаж инициативы",
+            desc: "Страх ошибки или чужой оценки блокирует первый шаг. Энергия уходит в бесконечную подготовку вместо реальных действий.",
+            practice: "«Импульс точного действия»: снятие ментального паралича анализа и запуск прямого шага."
+          }
+        }
       },
-      {
-        q: "Ваша главная автоматическая реакция на стресс и неопределенность:",
-        opts: [
-          { t: "Замирание, ступор и расфокус внимания", score: "procrastination" },
-          { t: "Суета, гиперконтроль и тревожная спешка", score: "burnout" },
-          { t: "Ожидание негативного сценария и внутреннего тупика", score: "fear" }
-        ]
+      relations: {
+        title: "Отношения и границы",
+        questions: [
+          {
+            q: "Когда возникает напряжение или конфликт с близкими/партнером:",
+            opts: [
+              { t: "Замалчиваю, чтобы не обострять и сохранить мир", key: "fear" },
+              { t: "Вспыхиваю, начинаю доказывать свою правоту до конца", key: "burnout" },
+              { t: "Ухожу в себя, эмоционально закрываюсь и отдаляюсь", key: "procrastination" }
+            ]
+          },
+          {
+            q: "Что вам сложнее всего в близком контакте:",
+            opts: [
+              { t: "Говорить твердое 'нет' без чувства вины", key: "fear" },
+              { t: "Доверять и отпускать тотальный контроль", key: "burnout" },
+              { t: "Быть открытым и уязвимым без страха предательства", key: "procrastination" }
+            ]
+          }
+        ],
+        results: {
+          fear: {
+            title: "Синдром удобного человека",
+            desc: "Подсознательный страх отвержения заставляет вас подстраиваться и предавать свои истинные желания.",
+            practice: "«Возврат внутренних опор»: практика укрепления границ и права выбирать себя без чувства вины."
+          },
+          burnout: {
+            title: "Гиперконтроль в контакте",
+            desc: "Попытка отвечать за эмоциональное состояние других людей создает фоновое истощение нервной системы.",
+            practice: "«Отпускание чужой ответственности»: разделение своих и чужих переживаний на квантовом уровне."
+          },
+          procrastination: {
+            title: "Броня дистанцирования",
+            desc: "Защитный блок после прошлого опыта боли: безопаснее никого не подпускать близко к своему сердцу.",
+            practice: "«Безопасная близость»: мягкое снятие защитного панцыря в сердечном центре."
+          }
+        }
       },
-      {
-        q: "Что прямо сейчас для вас критически важно активировать:",
-        opts: [
-          { t: "Четкий импульс действия без самосаботажа", score: "procrastination" },
-          { t: "Восстановление глубокого ресурса и снятие перегруза", score: "burnout" },
-          { t: "Пробитие финансового потолка в легком состоянии", score: "fear" }
-        ]
+      health: {
+        title: "Самочувствие и энергия",
+        questions: [
+          {
+            q: "Как вы чувствуете свой уровень энергии в течение дня:",
+            opts: [
+              { t: "Утром тяжело вставать, день начинается на силе воли", key: "burnout" },
+              { t: "Постоянное фоновое напряжение в шее, плечах или животе", key: "fear" },
+              { t: "Резкие скачки: от энтузиазма до полного эмоционального спада", key: "procrastination" }
+            ]
+          },
+          {
+            q: "Что происходит, когда вы пытаетесь просто отдохнуть:",
+            opts: [
+              { t: "Начинает грызть фоновое чувство вины: 'я теряю время'", key: "burnout" },
+              { t: "В голове продолжает крутиться бесконечный поток мыслей", key: "fear" },
+              { t: "Проваливаюсь в телефон или сериалы вместо реального отдыха", key: "procrastination" }
+            ]
+          }
+        ],
+        results: {
+          burnout: {
+            title: "Хронический дефицит восстановления",
+            desc: "Нервная система застряла в режиме «бей или беги». Организм разучился входить в фазу глубокой перезагрузки.",
+            practice: "«Соматическая разгрузка»: практика глубинного расслабления диафрагмы и блуждающего нерва."
+          },
+          fear: {
+            title: "Защитный спазм безопасности",
+            desc: "Тело удерживает невыраженные эмоции стресса в виде мышечных блоков, забирая до 50% вашей суточной энергии.",
+            practice: "«Сброс телесного кортизола»: техника дыхательного заземления и высвобождения напряжения."
+          },
+          procrastination: {
+            title: "Энергетический расфокус",
+            desc: "Утечка ресурса через незавершенные циклы внимания и информационный шум.",
+            practice: "«Сборка центрирования»: возврат внимания из внешнего мира во внутренний ресурс."
+          }
+        }
+      },
+      self: {
+        title: "Самоощущение и ценность",
+        questions: [
+          {
+            q: "Когда вас хвалят или признают ваши результаты:",
+            opts: [
+              { t: "Кажется, что мне просто повезло, и скоро поймут, что я не эксперт", key: "fear" },
+              { t: "Обесцениваю: 'Ничего особенного, можно было сделать в 10 раз лучше'", key: "burnout" },
+              { t: "Чувствую неловкость и хочется поскорее сменить тему", key: "procrastination" }
+            ]
+          },
+          {
+            q: "Какое внутреннее убеждение чаще всего звучит фоном:",
+            opts: [
+              { t: "'Мне нужно постоянно доказывать, что я чего-то стою'", key: "burnout" },
+              { t: "'Я пока еще недостаточно готов / не хватает знаний'", key: "fear" },
+              { t: "'Другие легко проявляются, а мне чего-то не хватает'", key: "procrastination" }
+            ]
+          }
+        ],
+        results: {
+          fear: {
+            title: "Синдром отложенной ценности",
+            desc: "Постоянное ожидание идеального момента блокирует проявление ваших реальных масштабов и талантов.",
+            practice: "«Активация безусловной ценности»: соединение со своим глубинным стержнем."
+          },
+          burnout: {
+            title: "Гонка самодоказывания",
+            desc: "Попытка заслужить любовь и признание мира через сверхусилия и перфекционизм.",
+            practice: "«Право на отдых и принятие»: снятие жесткого внутреннего критика."
+          },
+          procrastination: {
+            title: "Страх видимости и критики",
+            desc: "Подсознание считает: быть на виду — значит подвергаться осуждению. Поэтому безопаснее оставаться в тени.",
+            practice: "«Безопасное проявление»: практика снятия зажима видимости."
+          }
+        }
       }
-    ];
+    };
 
-    let currentQ = 0;
-    let scores = { procrastination: 0, burnout: 0, fear: 0 };
+    let activeTopic = null;
+    let stepIndex = 0;
+    let scores = { fear: 0, burnout: 0, procrastination: 0 };
 
-    function startTest() {
-      document.getElementById("screen-intro").classList.add("hidden");
+    function chooseTopic(topicKey) {
+      activeTopic = topicKey;
+      stepIndex = 0;
+      scores = { fear: 0, burnout: 0, procrastination: 0 };
+      document.getElementById("screen-topics").classList.add("hidden");
       document.getElementById("screen-quiz").classList.remove("hidden");
-      renderQuestion();
+      renderQuiz();
     }
 
-    function renderQuestion() {
-      const q = questions[currentQ];
-      document.getElementById("q-counter").innerText = `Вопрос ${currentQ + 1} из ${questions.length}`;
-      document.getElementById("q-title").innerText = q.q;
-      const box = document.getElementById("options-box");
+    function renderQuiz() {
+      const topic = quizData[activeTopic];
+      const q = topic.questions[stepIndex];
+      document.getElementById("quiz-badge").innerText = `${topic.title} • Вопрос ${stepIndex + 1} из ${topic.questions.length}`;
+      document.getElementById("quiz-question").innerText = q.q;
+
+      const box = document.getElementById("quiz-options");
       box.innerHTML = "";
       q.opts.forEach(opt => {
         const div = document.createElement("div");
         div.className = "option";
         div.innerText = opt.t;
-        div.onclick = () => selectOption(opt.score);
+        div.onclick = () => onSelectAnswer(opt.key);
         box.appendChild(div);
       });
     }
 
-    function selectOption(type) {
-      scores[type]++;
-      currentQ++;
-      if (currentQ < questions.length) {
-        renderQuestion();
+    function onSelectAnswer(key) {
+      scores[key]++;
+      stepIndex++;
+      const topic = quizData[activeTopic];
+      if (stepIndex < topic.questions.length) {
+        renderQuiz();
       } else {
-        showResult();
+        showFinalResult();
       }
     }
 
-    function showResult() {
+    function showFinalResult() {
       document.getElementById("screen-quiz").classList.add("hidden");
       document.getElementById("screen-result").classList.remove("hidden");
-      
+
       const dominant = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
-      
-      const data = {
-        procrastination: {
-          title: "Скрытый саботаж и расфокус",
-          desc: "Ваша энергия уходит в сомнения и анализ. Подсознание пытается обезопасить вас от ошибок через замирание.",
-          code: "res_sabotage"
-        },
-        burnout: {
-          title: "Синдром выжатого ресурса",
-          desc: "Вы движетесь на волевых усилиях и перегрузке. Необходима пересборка баланса и снятие скрытой тревожности.",
-          code: "res_burnout"
-        },
-        fear: {
-          title: "Подсознательный потолок масштаба",
-          desc: "Блок связан со скрытым страхом масштабирования и ответственности при переходе на новый уровень дохода.",
-          code: "res_scale"
-        }
-      };
+      const res = quizData[activeTopic].results[dominant];
 
-      const res = data[dominant];
-      document.getElementById("res-header").innerText = res.title;
-      document.getElementById("res-text").innerText = res.desc;
+      document.getElementById("res-title").innerText = res.title;
+      document.getElementById("res-desc").innerText = res.desc;
+      document.getElementById("res-practice").innerText = res.practice;
+    }
 
-      const link = document.getElementById("res-btn");
-      link.href = `https://t.me/upgrade_mind_app_bot?start=${res.code}`;
-      link.onclick = (e) => {
-        if (tg) {
-          tg.openTelegramLink(`https://t.me/upgrade_mind_app_bot?start=${res.code}`);
-          tg.close();
-        }
-      };
+    function finishAndClose() {
+      if (tg) tg.close();
+    }
+
+    function restart() {
+      document.getElementById("screen-result").classList.add("hidden");
+      document.getElementById("screen-topics").classList.remove("hidden");
     }
   </script>
 </body>
