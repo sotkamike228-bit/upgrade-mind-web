@@ -6,95 +6,125 @@
   <title>Апгрейд Подсознания</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root {
-      --bg: var(--tg-theme-bg-color, #121418);
-      --text: var(--tg-theme-text-color, #ffffff);
-      --card: var(--tg-theme-secondary-bg-color, #1e222b);
-      --hint: var(--tg-theme-hint-color, #8b95a5);
-      --btn: var(--tg-theme-button-color, #2ea6ff);
-      --btn-text: var(--tg-theme-button-text-color, #ffffff);
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 16px;
-      background: var(--bg);
-      color: var(--text);
+      padding: 20px 16px;
+      background: #0f172a;
+      color: #f8fafc;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .card {
-      background: var(--card);
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 12px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 22px 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
     }
-    h2 { margin-top: 0; font-size: 1.25rem; }
-    p { color: var(--hint); font-size: 0.95rem; line-height: 1.4; }
+    h2 { margin: 0 0 10px 0; font-size: 1.35rem; font-weight: 700; color: #38bdf8; }
+    p { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin: 0 0 18px 0; }
     .btn {
       display: block;
       width: 100%;
-      box-sizing: border-box;
-      background: var(--btn);
-      color: var(--btn-text);
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #ffffff;
       border: none;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 1rem;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 1.05rem;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 8px;
       text-align: center;
+      text-decoration: none;
+      margin-top: 10px;
+      transition: opacity 0.2s;
     }
+    .btn:active { opacity: 0.85; }
     .option {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin-bottom: 8px;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      line-height: 1.4;
       cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .option:active { background: rgba(255, 255, 255, 0.15); }
+    .option:active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
     .hidden { display: none; }
   </style>
 </head>
 <body>
   <div id="screen-intro" class="card">
-    <h2>🧠 Экспресс-диагностика</h2>
-    <p>Пройдите 3 ключевых вопроса, чтобы выявить скрытый ментальный барьер и получить персональную практику.</p>
-    <button class="btn" onclick="startTest()">Начать тест</button>
+    <span class="badge">Квантовая психология</span>
+    <h2>🧠 Диагностика ментальных блоков</h2>
+    <p>Ответьте на 3 вопроса, чтобы система определила ключевой барьер подсознания, блокирующий рост дохода и энергии.</p>
+    <button class="btn" onclick="startTest()">Пройти тест</button>
   </div>
 
   <div id="screen-quiz" class="card hidden">
-    <h2 id="q-title">Вопрос</h2>
-    <p id="q-desc">Выберите вариант, наиболее близкий вам:</p>
+    <span class="badge" id="q-counter">Вопрос 1 из 3</span>
+    <h2 id="q-title" style="color: #f8fafc; font-size: 1.15rem;"></h2>
     <div id="options-box"></div>
   </div>
 
   <div id="screen-result" class="card hidden">
-    <h2>✨ Диагностика завершена</h2>
+    <span class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">Диагностика готова</span>
+    <h2 id="res-header">Результат анализа</h2>
     <p id="res-text"></p>
-    <button class="btn" onclick="sendResult()">Получить практику в чат</button>
+    <a id="res-btn" class="btn" href="#">⚡ Получить разбор и практику в бота</a>
   </div>
 
   <script>
     const tg = window.Telegram?.WebApp;
-    if (tg) tg.expand();
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
 
     const questions = [
-      { q: "Когда вам предстоит сделать важный рывок в делах:", opts: [
-        { t: "Включается сомнение и откладывание на потом", score: "procrastination" },
-        { t: "Берусь сразу, но быстро выгораю", score: "burnout" },
-        { t: "Чувствую страх критики или неудачи", score: "fear" }
-      ]},
-      { q: "Ваша главная внутренняя реакция на неожиданный кризис:", opts: [
-        { t: "Замирание и ступор", score: "procrastination" },
-        { t: "Суета и попытка контролировать всё подряд", score: "burnout" },
-        { t: "Ожидание худшего сценария", score: "fear" }
-      ]},
-      { q: "Что сейчас важнее всего настроить:", opts: [
-        { t: "Стабильную уверенность и фокус", score: "procrastination" },
-        { t: "Энергию и восстановление ресурса", score: "burnout" },
-        { t: "Пробитие финансового потолка без страха", score: "fear" }
-      ]}
+      {
+        q: "Когда вам предстоит сделать ключевой финансовый или карьерный шаг:",
+        opts: [
+          { t: "Появляются бесконечные сомнения, откладываю на потом", score: "procrastination" },
+          { t: "Берусь на износ, но быстро выгораю и теряю силы", score: "burnout" },
+          { t: "Возникает внутренний страх критики или потери контроля", score: "fear" }
+        ]
+      },
+      {
+        q: "Ваша главная автоматическая реакция на стресс и неопределенность:",
+        opts: [
+          { t: "Замирание, ступор и расфокус внимания", score: "procrastination" },
+          { t: "Суета, гиперконтроль и тревожная спешка", score: "burnout" },
+          { t: "Ожидание негативного сценария и внутреннего тупика", score: "fear" }
+        ]
+      },
+      {
+        q: "Что прямо сейчас для вас критически важно активировать:",
+        opts: [
+          { t: "Четкий импульс действия без самосаботажа", score: "procrastination" },
+          { t: "Восстановление глубокого ресурса и снятие перегруза", score: "burnout" },
+          { t: "Пробитие финансового потолка в легком состоянии", score: "fear" }
+        ]
+      }
     ];
 
     let currentQ = 0;
@@ -108,8 +138,8 @@
 
     function renderQuestion() {
       const q = questions[currentQ];
-      document.getElementById("q-title").innerText = `Вопрос ${currentQ + 1} из ${questions.length}`;
-      document.getElementById("q-desc").innerText = q.q;
+      document.getElementById("q-counter").innerText = `Вопрос ${currentQ + 1} из ${questions.length}`;
+      document.getElementById("q-title").innerText = q.q;
       const box = document.getElementById("options-box");
       box.innerHTML = "";
       q.opts.forEach(opt => {
@@ -131,30 +161,42 @@
       }
     }
 
-    let dominantBarrier = "procrastination";
     function showResult() {
       document.getElementById("screen-quiz").classList.add("hidden");
       document.getElementById("screen-result").classList.remove("hidden");
-      dominantBarrier = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
-      const resTexts = {
-        procrastination: "Ваш ключевой фокус — разблокировка внутреннего импульса и снятие скрытого сопротивления.",
-        burnout: "Ваш ключевой фокус — регуляция энергетического баланса и разгрузка нервной системы.",
-        fear: "Ваш ключевой фокус — устранение подсознательного потолка безопасности при масштабировании."
+      
+      const dominant = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+      
+      const data = {
+        procrastination: {
+          title: "Скрытый саботаж и расфокус",
+          desc: "Ваша энергия уходит в сомнения и анализ. Подсознание пытается обезопасить вас от ошибок через замирание.",
+          code: "res_sabotage"
+        },
+        burnout: {
+          title: "Синдром выжатого ресурса",
+          desc: "Вы движетесь на волевых усилиях и перегрузке. Необходима пересборка баланса и снятие скрытой тревожности.",
+          code: "res_burnout"
+        },
+        fear: {
+          title: "Подсознательный потолок масштаба",
+          desc: "Блок связан со скрытым страхом масштабирования и ответственности при переходе на новый уровень дохода.",
+          code: "res_scale"
+        }
       };
-      document.getElementById("res-text").innerText = resTexts[dominantBarrier];
-    }
 
-    function sendResult() {
-      const payload = JSON.stringify({
-        test: "subconscious_quick_scan",
-        dominant: dominantBarrier,
-        scores: scores
-      });
-      if (tg) {
-        tg.sendData(payload);
-      } else {
-        alert("В реальном Telegram результат отправится прямо в чат с ботом!");
-      }
+      const res = data[dominant];
+      document.getElementById("res-header").innerText = res.title;
+      document.getElementById("res-text").innerText = res.desc;
+
+      const link = document.getElementById("res-btn");
+      link.href = `https://t.me/upgrade_mind_app_bot?start=${res.code}`;
+      link.onclick = (e) => {
+        if (tg) {
+          tg.openTelegramLink(`https://t.me/upgrade_mind_app_bot?start=${res.code}`);
+          tg.close();
+        }
+      };
     }
   </script>
 </body>
