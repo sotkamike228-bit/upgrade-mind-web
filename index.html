@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Апгрейд Подсознания</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: var(--tg-theme-bg-color, #121418);
+      --text: var(--tg-theme-text-color, #ffffff);
+      --card: var(--tg-theme-secondary-bg-color, #1e222b);
+      --hint: var(--tg-theme-hint-color, #8b95a5);
+      --btn: var(--tg-theme-button-color, #2ea6ff);
+      --btn-text: var(--tg-theme-button-text-color, #ffffff);
+    }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    h2 { margin-top: 0; font-size: 1.25rem; }
+    p { color: var(--hint); font-size: 0.95rem; line-height: 1.4; }
+    .btn {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--btn);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .option {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .option:active { background: rgba(255, 255, 255, 0.15); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div id="screen-intro" class="card">
+    <h2>🧠 Экспресс-диагностика</h2>
+    <p>Пройдите 3 ключевых вопроса, чтобы выявить скрытый ментальный барьер и получить персональную практику.</p>
+    <button class="btn" onclick="startTest()">Начать тест</button>
+  </div>
+
+  <div id="screen-quiz" class="card hidden">
+    <h2 id="q-title">Вопрос</h2>
+    <p id="q-desc">Выберите вариант, наиболее близкий вам:</p>
+    <div id="options-box"></div>
+  </div>
+
+  <div id="screen-result" class="card hidden">
+    <h2>✨ Диагностика завершена</h2>
+    <p id="res-text"></p>
+    <button class="btn" onclick="sendResult()">Получить практику в чат</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
+
+    const questions = [
+      { q: "Когда вам предстоит сделать важный рывок в делах:", opts: [
+        { t: "Включается сомнение и откладывание на потом", score: "procrastination" },
+        { t: "Берусь сразу, но быстро выгораю", score: "burnout" },
+        { t: "Чувствую страх критики или неудачи", score: "fear" }
+      ]},
+      { q: "Ваша главная внутренняя реакция на неожиданный кризис:", opts: [
+        { t: "Замирание и ступор", score: "procrastination" },
+        { t: "Суета и попытка контролировать всё подряд", score: "burnout" },
+        { t: "Ожидание худшего сценария", score: "fear" }
+      ]},
+      { q: "Что сейчас важнее всего настроить:", opts: [
+        { t: "Стабильную уверенность и фокус", score: "procrastination" },
+        { t: "Энергию и восстановление ресурса", score: "burnout" },
+        { t: "Пробитие финансового потолка без страха", score: "fear" }
+      ]}
+    ];
+
+    let currentQ = 0;
+    let scores = { procrastination: 0, burnout: 0, fear: 0 };
+
+    function startTest() {
+      document.getElementById("screen-intro").classList.add("hidden");
+      document.getElementById("screen-quiz").classList.remove("hidden");
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const q = questions[currentQ];
+      document.getElementById("q-title").innerText = `Вопрос ${currentQ + 1} из ${questions.length}`;
+      document.getElementById("q-desc").innerText = q.q;
+      const box = document.getElementById("options-box");
+      box.innerHTML = "";
+      q.opts.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "option";
+        div.innerText = opt.t;
+        div.onclick = () => selectOption(opt.score);
+        box.appendChild(div);
+      });
+    }
+
+    function selectOption(type) {
+      scores[type]++;
+      currentQ++;
+      if (currentQ < questions.length) {
+        renderQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    let dominantBarrier = "procrastination";
+    function showResult() {
+      document.getElementById("screen-quiz").classList.add("hidden");
+      document.getElementById("screen-result").classList.remove("hidden");
+      dominantBarrier = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+      const resTexts = {
+        procrastination: "Ваш ключевой фокус — разблокировка внутреннего импульса и снятие скрытого сопротивления.",
+        burnout: "Ваш ключевой фокус — регуляция энергетического баланса и разгрузка нервной системы.",
+        fear: "Ваш ключевой фокус — устранение подсознательного потолка безопасности при масштабировании."
+      };
+      document.getElementById("res-text").innerText = resTexts[dominantBarrier];
+    }
+
+    function sendResult() {
+      const payload = JSON.stringify({
+        test: "subconscious_quick_scan",
+        dominant: dominantBarrier,
+        scores: scores
+      });
+      if (tg) {
+        tg.sendData(payload);
+      } else {
+        alert("В реальном Telegram результат отправится прямо в чат с ботом!");
+      }
+    }
+  </script>
+</body>
+</html>
