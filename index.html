@@ -102,6 +102,11 @@
       margin-top: 8px;
     }
     .hidden { display: none; }
+    button.option { display: block; width: 100%; text-align: left; color: inherit; font-family: inherit; }
+    .notice { font-size: .85rem; color: #cbd5e1; }
+    .help-btn { color: #fca5a5; }
+    .selected { border-color: #38bdf8; background: rgba(56, 189, 248, .15); }
+    .progress { color: #94a3b8; font-size: .85rem; }
   </style>
 </head>
 <body>
@@ -143,7 +148,62 @@
         <span>Синдром самозванца, сомнения, критика</span>
       </div>
     </div>
+    <div class="practice-box">
+      <b>🌿 Здесь и сейчас</b>
+      <p>Чекап на 90 секунд: зрение, слух, тело и дыхание.</p>
+      <p id="streak-display" aria-live="polite"></p>
+      <button type="button" class="btn" onclick="startCheckup()">Начать чекап</button>
+      <button type="button" class="btn btn-secondary" onclick="showSOS()">SOS: быстрые практики</button>
+    </div>
+    <p class="notice">Новые материалы — черновики, ожидающие профессиональной проверки. Они не заменяют медицинскую или психологическую помощь.</p>
   </div>
+
+  <section id="screen-checkup" class="card hidden" aria-live="polite">
+    <span class="badge" id="checkup-progress"></span>
+    <h2 id="checkup-question"></h2>
+    <p id="checkup-timing"></p>
+    <div id="checkup-zones"></div>
+    <div id="checkup-answers"></div>
+    <button type="button" class="btn btn-secondary help-btn" onclick="showHelp()">Мне плохо</button>
+    <button type="button" class="btn btn-secondary" onclick="showHome()">На главную</button>
+  </section>
+
+  <section id="screen-checkup-done" class="card hidden" aria-live="polite">
+    <span class="badge">Чекап завершён</span>
+    <h2>Здесь и сейчас</h2>
+    <p id="checkup-closing"></p>
+    <p id="streak-done"></p>
+    <button type="button" class="btn" onclick="showHome()">На главную</button>
+    <button type="button" class="btn btn-secondary help-btn" onclick="showHelp()">Мне плохо</button>
+  </section>
+
+  <section id="screen-sos" class="card hidden">
+    <span class="badge">Быстрый доступ</span>
+    <h2>SOS и поддержка</h2>
+    <p>Выберите то, что ближе сейчас. Это не экстренная медицинская помощь.</p>
+    <div id="sos-list"></div>
+    <button type="button" class="btn btn-secondary help-btn" onclick="showHelp()">Мне плохо — куда обратиться</button>
+    <button type="button" class="btn btn-secondary" onclick="showHome()">На главную</button>
+  </section>
+
+  <section id="screen-practice" class="card hidden" aria-live="polite">
+    <span id="practice-progress" class="badge"></span>
+    <h2 id="practice-title"></h2>
+    <p id="practice-warning"></p>
+    <p id="practice-boundary"></p>
+    <div class="practice-box"><h3 id="practice-card-title"></h3><p id="practice-card-text"></p><span id="practice-timing" class="progress"></span></div>
+    <button type="button" class="btn" id="practice-next" onclick="nextPracticeCard()">Далее</button>
+    <button type="button" class="btn btn-secondary help-btn" onclick="showHelp()">Мне плохо</button>
+    <button type="button" class="btn btn-secondary" onclick="showSOS()">К выбору практики</button>
+  </section>
+
+  <section id="screen-help" class="card hidden">
+    <h2>Помощь сейчас</h2>
+    <p>Если есть непосредственная опасность или мысли причинить себе вред, обратитесь в местную экстренную службу (например, 112 или 911 — в зависимости от страны). Позвоните близкому человеку и попросите побыть с вами.</p>
+    <p>Если состояние вызывает тревогу или симптомы необычны, обратитесь за медицинской помощью. Практика не заменяет её.</p>
+    <button type="button" class="btn" onclick="showSOS()">Посмотреть практики</button>
+    <button type="button" class="btn btn-secondary" onclick="showHome()">На главную</button>
+  </section>
 
   <!-- Экран 2: Вопросы теста -->
   <div id="screen-quiz" class="card hidden">
@@ -390,6 +450,179 @@
       document.getElementById("screen-result").classList.add("hidden");
       document.getElementById("screen-topics").classList.remove("hidden");
     }
+    const screens = ["screen-topics", "screen-quiz", "screen-result", "screen-checkup", "screen-checkup-done", "screen-sos", "screen-practice", "screen-help"];
+    const streakKey = "upgrade_mind_checkup_streak_v1";
+    let checkupData = null;
+    let practiceData = null;
+    let checkupIndex = 0;
+    let currentPractice = null;
+    let practiceIndex = 0;
+    let navigationVersion = 0;
+
+    function showScreen(id) {
+      navigationVersion++;
+      screens.forEach(screen => document.getElementById(screen).classList.toggle("hidden", screen !== id));
+      window.scrollTo(0, 0);
+    }
+
+    function localDate(date = new Date()) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+
+    function dayNumber(value) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
+      const [year, month, day] = value.split("-").map(Number);
+      return Date.UTC(year, month - 1, day) / 86400000;
+    }
+
+    function getStreak() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(streakKey) || "null");
+        if (!stored || !Number.isInteger(stored.count) || stored.count < 1 || typeof stored.lastDate !== "string") return { count: 0, lastDate: null };
+        const gap = dayNumber(localDate()) - dayNumber(stored.lastDate);
+        if (!Number.isFinite(gap) || gap < 0 || gap > 3) return { count: 0, lastDate: null };
+        return stored;
+      } catch (_) { return { count: 0, lastDate: null }; }
+    }
+
+    function finishStreak() {
+      const today = localDate();
+      const streak = getStreak();
+      if (streak.lastDate !== today) {
+        streak.count++;
+        streak.lastDate = today;
+        try { localStorage.setItem(streakKey, JSON.stringify(streak)); }
+        catch (_) { return `${streak.count} дн. (сохранение на устройстве недоступно)`; }
+      }
+      return `${streak.count} дн.`;
+    }
+
+    function showHome() {
+      const streak = getStreak();
+      document.getElementById("streak-display").textContent = `Серия: ${streak.count} дн. Пропуск до двух дней её сохраняет.`;
+      showScreen("screen-topics");
+    }
+
+    async function loadJson(path) {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    }
+
+    async function startCheckup() {
+      showScreen("screen-checkup");
+      const version = navigationVersion;
+      document.getElementById("checkup-progress").textContent = "Загрузка";
+      document.getElementById("checkup-question").textContent = "Загружаем чекап…";
+      document.getElementById("checkup-timing").textContent = "";
+      document.getElementById("checkup-zones").replaceChildren();
+      document.getElementById("checkup-answers").replaceChildren();
+      try {
+        checkupData = checkupData || await loadJson("./checkup.json");
+        if (version !== navigationVersion) return;
+        checkupIndex = 0;
+        renderCheckup();
+      } catch (_) {
+        if (version === navigationVersion) document.getElementById("checkup-question").textContent = "Не удалось загрузить чекап. Проверьте соединение и попробуйте ещё раз.";
+      }
+    }
+
+    function makeOption(label, action) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "option";
+      button.textContent = label;
+      button.addEventListener("click", action);
+      return button;
+    }
+
+    function renderCheckup() {
+      const question = checkupData.questions[checkupIndex];
+      document.getElementById("checkup-progress").textContent = `Здесь и сейчас • ${checkupIndex + 1} из ${checkupData.questions.length}`;
+      document.getElementById("checkup-question").textContent = question.text;
+      document.getElementById("checkup-timing").textContent = `Ориентир — ${question.timerSec} секунд. Можно отвечать в своём темпе.`;
+      const zones = document.getElementById("checkup-zones");
+      const answers = document.getElementById("checkup-answers");
+      zones.replaceChildren();
+      answers.replaceChildren();
+      if (question.zones) {
+        const label = document.createElement("p");
+        label.textContent = "Область тела (необязательно):";
+        zones.appendChild(label);
+        question.zones.forEach(zone => {
+          const button = makeOption(zone.label, () => {
+            zones.querySelectorAll("button").forEach(item => { item.classList.remove("selected"); item.setAttribute("aria-pressed", "false"); });
+            button.classList.add("selected");
+            button.setAttribute("aria-pressed", "true");
+          });
+          button.setAttribute("aria-pressed", "false");
+          zones.appendChild(button);
+        });
+      }
+      question.answers.forEach(answer => answers.appendChild(makeOption(answer.label, () => {
+        checkupIndex++;
+        if (checkupIndex < checkupData.questions.length) renderCheckup();
+        else {
+          document.getElementById("checkup-closing").textContent = checkupData.closing;
+          document.getElementById("streak-done").textContent = `Серия: ${finishStreak()}`;
+          showScreen("screen-checkup-done");
+        }
+      })));
+    }
+
+    const sosChoices = [
+      { id: "P04", label: "Паника и сильная тревога", detail: "Переждать волну" },
+      { id: "P03", label: "Напряжение в голове", detail: "Снять шлем" },
+      { id: "P05", label: "Мысли не дают отдохнуть", detail: "Разгрузить голову — вечерняя практика" },
+      { id: "P06", label: "Трудно уснуть", detail: "Тяжёлые веки — практика для сна" }
+    ];
+
+    async function showSOS() {
+      showScreen("screen-sos");
+      const version = navigationVersion;
+      const list = document.getElementById("sos-list");
+      list.textContent = "Загружаем практики…";
+      try {
+        practiceData = practiceData || await loadJson("./practices_screen.json");
+        if (version !== navigationVersion) return;
+        list.replaceChildren();
+        sosChoices.forEach(choice => {
+          const practice = practiceData.find(item => item.id === choice.id);
+          if (practice) list.appendChild(makeOption(`${choice.label} — ${choice.detail}`, () => startPractice(practice)));
+        });
+        if (!list.childElementCount) list.textContent = "Практики сейчас недоступны.";
+      } catch (_) {
+        if (version === navigationVersion) list.textContent = "Не удалось загрузить практики. Проверьте соединение и попробуйте ещё раз.";
+      }
+    }
+
+    function startPractice(practice) {
+      currentPractice = practice;
+      practiceIndex = 0;
+      showScreen("screen-practice");
+      renderPractice();
+    }
+
+    function renderPractice() {
+      const card = currentPractice.cards[practiceIndex];
+      document.getElementById("practice-progress").textContent = `Шаг ${practiceIndex + 1} из ${currentPractice.cards.length}`;
+      document.getElementById("practice-title").textContent = currentPractice.title;
+      document.getElementById("practice-warning").textContent = currentPractice.warning || "";
+      document.getElementById("practice-boundary").textContent = currentPractice.boundaryNotice || "Можно остановиться в любой момент.";
+      document.getElementById("practice-card-title").textContent = card.title;
+      document.getElementById("practice-card-text").textContent = card.text;
+      document.getElementById("practice-timing").textContent = card.timerSec ? `Ориентир: ${card.timerSec} сек.` : "";
+      document.getElementById("practice-next").textContent = practiceIndex === currentPractice.cards.length - 1 ? "Завершить" : "Далее";
+    }
+
+    function nextPracticeCard() {
+      practiceIndex++;
+      if (practiceIndex >= currentPractice.cards.length) showSOS();
+      else renderPractice();
+    }
+
+    function showHelp() { showScreen("screen-help"); }
+    showHome();
   </script>
 </body>
 </html>
