@@ -107,6 +107,9 @@
     .help-btn { color: #fca5a5; }
     .selected { border-color: #38bdf8; background: rgba(56, 189, 248, .15); }
     .progress { color: #94a3b8; font-size: .85rem; }
+    .player-controls { display: flex; gap: 8px; }
+    .player-controls .btn { flex: 1; }
+    .player-controls .btn:disabled { opacity: .5; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -157,6 +160,34 @@
     </div>
     <p class="notice">Новые материалы — черновики, ожидающие профессиональной проверки. Они не заменяют медицинскую или психологическую помощь.</p>
   </div>
+
+  <section id="screen-audio" class="card hidden">
+    <span class="badge">Персональная практика</span>
+    <h2 id="audio-title">Загружаем практику…</h2>
+    <p id="audio-warning"></p>
+    <p id="audio-boundary"></p>
+    <p id="audio-contraindications" class="notice"></p>
+    <button type="button" class="btn btn-secondary help-btn" onclick="showHelp()">Мне плохо — куда обратиться</button>
+    <p class="notice">Запись пока недоступна: текст практики озвучивается голосом вашего браузера.</p>
+    <p id="audio-status" class="progress" aria-live="polite"></p>
+    <div class="player-controls">
+      <button type="button" id="audio-play" class="btn" onclick="playAudioPractice()" disabled>Воспроизвести</button>
+      <button type="button" id="audio-stop" class="btn btn-secondary" onclick="stopAudioPractice()" disabled>Остановить</button>
+    </div>
+    <div class="practice-box">
+      <h3>Открыть полную программу из 12 нейропрактик (Уровень 1-4) за 290 ₽</h3>
+      <button type="button" class="btn" onclick="showScreen('screen-program')">Перейти к программе</button>
+    </div>
+    <button type="button" class="btn btn-secondary" onclick="showScreen('screen-result')">К результату диагностики</button>
+    <button type="button" class="btn btn-secondary" onclick="showHome()">На главную</button>
+  </section>
+
+  <section id="screen-program" class="card hidden">
+    <span class="badge">Полная программа</span>
+    <h2>12 нейропрактик — уровни 1–4</h2>
+    <p>Стоимость программы — 290 ₽. Переход к оплате пока не настроен.</p>
+    <button type="button" class="btn btn-secondary" onclick="showScreen('screen-audio')">К практике</button>
+  </section>
 
   <section id="screen-checkup" class="card hidden" aria-live="polite">
     <span class="badge" id="checkup-progress"></span>
@@ -439,18 +470,96 @@
 
       document.getElementById("res-title").innerText = res.title;
       document.getElementById("res-desc").innerText = res.desc;
-      document.getElementById("res-practice").innerText = res.practice;
+      const practiceNames = { money: "Шире окно", relations: "Вернуться к себе", health: "Снять шлем", self: "Мой стержень" };
+      document.getElementById("res-practice").innerText = `«${practiceNames[activeTopic]}» — практика по выбранной сфере.`;
     }
 
-    function finishAndClose() {
-      if (tg) tg.close();
+    let audioPractice = null;
+    let audioSteps = [];
+    let audioIndex = 0;
+    let audioTimer = null;
+    let audioSession = 0;
+
+    async function finishAndClose() {
+      const ids = { money: "P01", relations: "P09", health: "P03", self: "P07" };
+      const id = ids[activeTopic];
+      showScreen("screen-audio");
+      const version = navigationVersion;
+      document.getElementById("audio-title").textContent = "Загружаем практику…";
+      document.getElementById("audio-status").textContent = "";
+      document.getElementById("audio-warning").textContent = "";
+      document.getElementById("audio-boundary").textContent = "";
+      document.getElementById("audio-contraindications").textContent = "";
+      audioPractice = null;
+      document.getElementById("audio-play").disabled = true;
+      try {
+        const practices = await loadJson("./practices.json");
+        if (version !== navigationVersion) return;
+        audioPractice = practices.find(item => item.id === id);
+        if (!audioPractice || !Array.isArray(audioPractice.steps)) throw new Error("Практика не найдена");
+        document.getElementById("audio-title").textContent = audioPractice.title;
+        document.getElementById("audio-warning").textContent = audioPractice.warning || "";
+        document.getElementById("audio-boundary").textContent = audioPractice.imageryNotice || audioPractice.boundaryNotice || "Можно остановиться в любой момент.";
+        document.getElementById("audio-contraindications").textContent = (audioPractice.contraindications || []).join(" ");
+        if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+          document.getElementById("audio-status").textContent = "Озвучивание недоступно в этом браузере.";
+          return;
+        }
+        document.getElementById("audio-status").textContent = "Нажмите «Воспроизвести», чтобы начать.";
+        document.getElementById("audio-play").disabled = false;
+      } catch (_) {
+        if (version === navigationVersion) document.getElementById("audio-status").textContent = "Не удалось загрузить практику. Вернитесь к результату и попробуйте снова.";
+      }
+    }
+
+    function stopAudioPractice() {
+      audioSession++;
+      clearTimeout(audioTimer);
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      document.getElementById("audio-play").disabled = !audioPractice;
+      document.getElementById("audio-stop").disabled = true;
+      if (audioPractice) document.getElementById("audio-status").textContent = "Воспроизведение остановлено.";
+    }
+
+    function playAudioPractice() {
+      if (!audioPractice) return;
+      stopAudioPractice();
+      const session = audioSession;
+      audioSteps = audioPractice.steps;
+      audioIndex = 0;
+      document.getElementById("audio-play").disabled = true;
+      document.getElementById("audio-stop").disabled = false;
+      function next() {
+        if (session !== audioSession) return;
+        if (audioIndex >= audioSteps.length) {
+          stopAudioPractice();
+          document.getElementById("audio-status").textContent = "Практика завершена.";
+          return;
+        }
+        const step = audioSteps[audioIndex++];
+        document.getElementById("audio-status").textContent = `Практика: шаг ${audioIndex} из ${audioSteps.length}`;
+        if (step.type === "pause") {
+          audioTimer = setTimeout(next, Math.max(0, Number(step.seconds) || 0) * 1000);
+        } else if (step.type === "say" && step.text) {
+          const utterance = new SpeechSynthesisUtterance(step.text);
+          utterance.lang = "ru-RU";
+          utterance.onend = next;
+          utterance.onerror = () => {
+            if (session !== audioSession) return;
+            stopAudioPractice();
+            document.getElementById("audio-status").textContent = "Не удалось озвучить практику. Проверьте голосовые настройки браузера.";
+          };
+          window.speechSynthesis.speak(utterance);
+        } else next();
+      }
+      next();
     }
 
     function restart() {
       document.getElementById("screen-result").classList.add("hidden");
       document.getElementById("screen-topics").classList.remove("hidden");
     }
-    const screens = ["screen-topics", "screen-quiz", "screen-result", "screen-checkup", "screen-checkup-done", "screen-sos", "screen-practice", "screen-help"];
+    const screens = ["screen-topics", "screen-quiz", "screen-result", "screen-audio", "screen-program", "screen-checkup", "screen-checkup-done", "screen-sos", "screen-practice", "screen-help"];
     const streakKey = "upgrade_mind_checkup_streak_v1";
     let checkupData = null;
     let practiceData = null;
@@ -460,6 +569,7 @@
     let navigationVersion = 0;
 
     function showScreen(id) {
+      if (id !== "screen-audio") stopAudioPractice();
       navigationVersion++;
       screens.forEach(screen => document.getElementById(screen).classList.toggle("hidden", screen !== id));
       window.scrollTo(0, 0);
